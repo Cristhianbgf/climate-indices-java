@@ -42,4 +42,6 @@ mvn test
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+The code is under the MIT licence; see [LICENSE](LICENSE).
+
+The test data are not. `src/test/resources/basin_*.csv` derive from TerraClimate (CC0 1.0). `src/test/resources/era5_daily_pr.csv`, and the reference values computed from it, contain modified Copernicus Climate Change Service information (2026), obtained through [Open-Meteo.com](https://open-meteo.com/) under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Neither the European Commission nor ECMWF is responsible for any use that may be made of the Copernicus information or data it contains. Details in [validation/README.md](validation/README.md).

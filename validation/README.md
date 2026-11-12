@@ -10,6 +10,8 @@
 | 132 | Quilca-Vítor-Chili | Semi-arid Andean basin with a long dry season |
 | 4994 | Urubamba | Humid Andean and Amazonian basin |
 
+`src/test/resources/era5_daily_pr.csv` holds daily precipitation (mm) from 1 January 1960 to 31 December 2025 at the centroid of each of the same three units, made by `fetch_era5_daily.py`. It comes from ERA5 (Hersbach et al., 2020, [doi:10.1002/qj.3803](https://doi.org/10.1002/qj.3803)), served by the Open-Meteo historical weather API (Zippenfenig, 2023, [doi:10.5281/zenodo.7970649](https://doi.org/10.5281/zenodo.7970649)) under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Changes: Open-Meteo extracts the series at the nearest grid point, and the values are rounded to 0.01 mm. Contains modified Copernicus Climate Change Service information (2026); neither the European Commission nor ECMWF is responsible for any use that may be made of the Copernicus information or data it contains. Weather data by [Open-Meteo.com](https://open-meteo.com/).
+
 ## SPI against xclim
 
 `xclim_spi_reference.py` computes SPI-1, SPI-3 and SPI-12 with xclim 0.61.1 (two-parameter gamma, approximate and maximum likelihood fits, calibration 1991-2020) and writes `src/test/resources/xclim_spi.csv`. `SpiXclimTest` checks every value with a tolerance of 1e-8.
