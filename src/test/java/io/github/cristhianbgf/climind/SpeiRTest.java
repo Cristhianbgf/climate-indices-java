@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.cristhianbgf.climind.dist.FitMethod;
 import java.io.IOException;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -55,6 +56,24 @@ class SpeiRTest {
                 assertEquals(expected[i], actual[i], 1e-8, "at " + at);
             }
         }
+    }
+
+    @Test
+    void maximumLikelihoodRunsAndApproximateIsRejected() throws IOException {
+        CsvTable ppt = CsvTable.read("/basin_ppt.csv");
+        CsvTable pet = CsvTable.read("/basin_pet.csv");
+        YearMonth start = YearMonth.parse(ppt.key(0));
+        MonthlySeries p = new MonthlySeries(start, ppt.column("ppt_132"));
+        MonthlySeries e = new MonthlySeries(start, pet.column("pet_132"));
+        YearMonth from = YearMonth.of(1991, 1);
+        YearMonth to = YearMonth.of(2020, 12);
+
+        double[] ml = Spei.compute(p, e, 3, FitMethod.MAXIMUM_LIKELIHOOD, from, to).toArray();
+        assertTrue(Double.isNaN(ml[1]));
+        for (int i = 2; i < ml.length; i++) {
+            assertTrue(Math.abs(ml[i]) <= Spi.LIMIT, "at " + ppt.key(i));
+        }
+        assertThrows(IllegalArgumentException.class, () -> Spei.compute(p, e, 3, FitMethod.APPROXIMATE, from, to));
     }
 
     @Test

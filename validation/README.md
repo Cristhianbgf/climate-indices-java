@@ -34,3 +34,23 @@ This library sums the window term by term, so dry windows stay at zero. The refe
 - **Parameters.** All 108 fits (3 basins, 3 windows, 12 months) agree with R: the shape to within 1e-12 and the location and scale to within 1e-9 in relative terms (`LogLogisticFitTest`). R accumulates sums and this library means; the fit scales with the data, so location and scale are compared after multiplying by the window.
 - **Index.** The 9 series agree to within 1e-8 in all 7 278 months with a finite value (`SpeiRTest`).
 - **Out of support.** In 27 months, all outside the reference period, the water balance falls beyond the bound of the fitted distribution (it has one whenever the shape is not zero), and R returns an infinite SPEI. This library returns ±8.21 there, the same limit as for the SPI. The other 39 values are the first months of each window, missing in both.
+
+## SPEI by maximum likelihood
+
+`glo_ml_reference.py` fits the same 108 samples by maximum likelihood twice: in the generalized logistic form, with code written independently of the Java one (Nelder-Mead from the PWM fit, restarted until the log-likelihood stops improving), and as xclim 0.61.1 does it for `dist="fisk"`, `method="ML"` (xclim's starting values from `_fit_start`, then `scipy.stats.fisk.fit`). It writes `src/test/resources/glo_ml_params.csv` and `xclim_fisk_ml.csv`.
+
+- **Against the independent fit.** All 108 log-likelihoods agree to within 1e-7, and the parameters to within 1e-4 of the scale (`LogLogisticMaximumLikelihoodTest`). The optimum is flat, so the log-likelihood is the meaningful comparison.
+- **Against xclim.** The fit here is never worse, and it is better in 44 of the 108 samples, by up to 1.8 in log-likelihood.
+
+### Why xclim's fit falls short
+
+xclim fits scipy's `fisk`, the log-logistic with shape `c > 0`, which in the generalized logistic form is `kappa = -1/c < 0`: a distribution bounded below. In 44 of the 108 samples the best fit has `kappa > 0` instead, bounded above, because the water balance of that month is skewed to the left. `fisk` cannot reach it; the closest it gets is the logistic, at `c` going to infinity. The optimizer heads there and stops wherever its tolerance says, with shapes between 1e5 and 1e9. These are exactly the 44 samples where the fit here does better. In one more sample (Urubamba, SPEI-3, March) xclim also returns a shape above 1000, but there the optimum is practically the logistic (`kappa` = -0.0008) and both fits reach the same log-likelihood. In the generalized logistic form both signs of `kappa` are ordinary values, so the fit converges.
+
+### Effect on the index, and why PWM stays the default
+
+In the 3 240 monthly values of the calibration period, the SPEI from the maximum likelihood fit here differs:
+
+- from xclim's by up to 0.72, and by more than 0.1 in 191 values;
+- from the PWM fit by up to 0.81, and by more than 0.1 in 290 values.
+
+Outside the calibration period, values that fall outside the support of the fitted distribution get ±8.21. That happens in 98 months with the maximum likelihood fit (80 dry months below the lower bound of a fit with `kappa < 0`, and 18 wet months at the upper bound of one with `kappa > 0`: 17 beyond it and one so close that the probability rounds to 1), in 80 with xclim's (all dry) and in 27 with PWM (23 dry and 4 wet). The maximum likelihood fit follows the calibration sample more closely, and its bounds sit closer to the sample; PWM places them further out and extrapolates better. That is why `Spei.compute` uses PWM unless asked otherwise.

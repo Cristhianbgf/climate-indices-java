@@ -5,10 +5,16 @@ public enum FitMethod {
 
     /**
      * Closed-form approximation of the maximum likelihood estimate (Thom 1958 for the gamma
-     * distribution). Same as {@code method="APP"} in xclim.
+     * distribution). Same as {@code method="APP"} in xclim. Gamma only.
      */
     APPROXIMATE,
 
-    /** Maximum likelihood with the location fixed at zero. Same as {@code method="ML"} with {@code floc=0} in xclim. */
-    MAXIMUM_LIKELIHOOD
+    /**
+     * Maximum likelihood. For the gamma distribution the location is fixed at zero, as with
+     * {@code method="ML"} and {@code floc=0} in xclim.
+     */
+    MAXIMUM_LIKELIHOOD,
+
+    /** Unbiased probability weighted moments, the default of the R package SPEI. Log-logistic only. */
+    PROBABILITY_WEIGHTED_MOMENTS
 }

@@ -2,6 +2,7 @@ package io.github.cristhianbgf.climind.dist;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,11 @@ class GammaFitTest {
         assertSame(GammaFit.UNDEFINED, GammaFit.fit(new double[] {0, 0, Double.NaN}, FitMethod.APPROXIMATE));
         assertSame(GammaFit.UNDEFINED, GammaFit.fit(new double[] {4, 4, 4}, FitMethod.MAXIMUM_LIKELIHOOD));
         assertTrue(Double.isNaN(GammaFit.UNDEFINED.cdf(1.0)));
+    }
+
+    @Test
+    void pwmIsNotAGammaMethod() {
+        assertThrows(IllegalArgumentException.class, () -> GammaFit.fit(X, FitMethod.PROBABILITY_WEIGHTED_MOMENTS));
     }
 
     @Test

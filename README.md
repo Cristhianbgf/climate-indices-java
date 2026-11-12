@@ -11,7 +11,7 @@ Work in progress. See the open issues for what comes next.
 - **SPI** (McKee et al., 1993) from monthly precipitation, at any accumulation window, with a two-parameter gamma fitted per calendar month on a chosen calibration period. Zeros get their own probability, as in xclim.
 - Fits by Thom's approximation or by maximum likelihood.
 
-- **SPEI** (Vicente-Serrano et al., 2010) from monthly precipitation and reference evapotranspiration, with a log-logistic distribution fitted by unbiased probability weighted moments, as in the R package SPEI.
+- **SPEI** (Vicente-Serrano et al., 2010) from monthly precipitation and reference evapotranspiration, with a log-logistic distribution fitted by unbiased probability weighted moments, as in the R package SPEI, or by maximum likelihood.
 
 ```java
 YearMonth start = YearMonth.of(1958, 1);
@@ -30,6 +30,7 @@ Both indices are checked on three Peruvian basins, 1958-2025. Details in [valida
 
 - SPI-1, SPI-3 and SPI-12 agree with xclim 0.61.1 to within 1e-8 in every month. Getting there showed that xclim's rolling mean turns dry windows into tiny positive values, which shifts SPI-3 in a hyper-arid basin by up to 2.8.
 - SPEI-1, SPEI-3 and SPEI-12 agree with the R package SPEI 1.8.1 to within 1e-8, and so do its 108 fitted distributions. Where R returns an infinite SPEI (27 months outside the reference period), this library returns ±8.21.
+- The maximum likelihood fit is never worse than xclim's and better in 44 of the 108 samples. In those 44, the best fit is bounded above, a shape xclim's log-logistic cannot take, so xclim's optimizer runs off towards infinite parameters.
 
 ## Build
 

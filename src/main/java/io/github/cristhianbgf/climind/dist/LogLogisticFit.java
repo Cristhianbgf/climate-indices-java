@@ -1,6 +1,14 @@
 package io.github.cristhianbgf.climind.dist;
 
 import java.util.Arrays;
+import org.apache.commons.math3.analysis.MultivariateFunction;
+import org.apache.commons.math3.optim.InitialGuess;
+import org.apache.commons.math3.optim.MaxEval;
+import org.apache.commons.math3.optim.PointValuePair;
+import org.apache.commons.math3.optim.nonlinear.scalar.GoalType;
+import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
+import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.NelderMeadSimplex;
+import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizer;
 
 /**
  * Three-parameter log-logistic distribution, written as Hosking's generalized logistic (GLO) with
@@ -58,6 +66,82 @@ public record LogLogisticFit(double xi, double alpha, double kappa) {
         double gg = k * Math.PI / Math.sin(k * Math.PI);
         double a = l2 / gg;
         return new LogLogisticFit(l1 - a * (1 - gg) / k, a, k);
+    }
+
+    /**
+     * Fit by maximum likelihood, with the shape kept in (-1, 1) as in {@link #fitPwm}.
+     *
+     * <p>In this form the logistic distribution is {@code kappa = 0}, an ordinary point of the
+     * parameter space. In the usual log-logistic form (shape {@code c = -1/kappa}, as in scipy's
+     * {@code fisk}) the same case sits at infinity, and samples close to it send the optimizer there.
+     *
+     * <p>Nelder-Mead on (xi, log alpha, atanh kappa), started from the PWM fit and restarted until the
+     * log-likelihood stops improving.
+     */
+    public static LogLogisticFit fitMaximumLikelihood(double[] values) {
+        double[] x = Arrays.stream(values).filter(Double::isFinite).toArray();
+        LogLogisticFit start = fitPwm(x);
+        if (start == UNDEFINED) {
+            return UNDEFINED;
+        }
+        if (Double.isInfinite(start.logLikelihood(x))) {
+            // the PWM fit leaves some values outside its support: start from the logistic instead
+            double mean = Arrays.stream(x).average().orElseThrow();
+            double sd = Math.sqrt(Arrays.stream(x).map(v -> (v - mean) * (v - mean)).sum() / x.length);
+            start = new LogLogisticFit(mean, sd * Math.sqrt(3) / Math.PI, 0);
+        }
+        MultivariateFunction negLogLik = q -> {
+            double ll = new LogLogisticFit(q[0], Math.exp(q[1]), Math.tanh(q[2])).logLikelihood(x);
+            return Double.isFinite(ll) ? -ll : Double.MAX_VALUE;
+        };
+        double[] q = {start.xi, Math.log(start.alpha), atanh(start.kappa)};
+        double best = negLogLik.value(q);
+        SimplexOptimizer optimizer = new SimplexOptimizer(1e-15, 1e-15);
+        for (int restart = 0; restart < 50; restart++) {
+            PointValuePair r = optimizer.optimize(
+                    new MaxEval(200_000),
+                    new ObjectiveFunction(negLogLik),
+                    GoalType.MINIMIZE,
+                    new InitialGuess(q),
+                    new NelderMeadSimplex(new double[] {0.1 * Math.exp(q[1]), 0.1, 0.1}));
+            q = r.getPoint();
+            if (best - r.getValue() < 1e-13) {
+                break;
+            }
+            best = r.getValue();
+        }
+        return new LogLogisticFit(q[0], Math.exp(q[1]), Math.tanh(q[2]));
+    }
+
+    /** Log-likelihood of the finite values; {@code -Infinity} if any falls outside the support. */
+    public double logLikelihood(double[] values) {
+        if (!(alpha > 0) || !(Math.abs(kappa) < 1)) {
+            return Double.NEGATIVE_INFINITY;
+        }
+        double sum = 0;
+        for (double v : values) {
+            if (!Double.isFinite(v)) {
+                continue;
+            }
+            double u = (v - xi) / alpha;
+            double y;
+            if (Math.abs(kappa) < 1e-12) {
+                y = u;
+            } else {
+                if (1 - kappa * u <= 0) {
+                    return Double.NEGATIVE_INFINITY;
+                }
+                y = -Math.log1p(-kappa * u) / kappa;
+            }
+            // log(1 + exp(-y)) without overflow for large negative y
+            double log1pExp = y > 0 ? Math.log1p(Math.exp(-y)) : -y + Math.log1p(Math.exp(y));
+            sum += -Math.log(alpha) - (1 - kappa) * y - 2 * log1pExp;
+        }
+        return sum;
+    }
+
+    private static double atanh(double v) {
+        return 0.5 * Math.log((1 + v) / (1 - v));
     }
 
     public double cdf(double x) {

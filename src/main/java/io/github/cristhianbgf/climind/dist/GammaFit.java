@@ -14,6 +14,9 @@ public record GammaFit(double shape, double scale) {
     public static final GammaFit UNDEFINED = new GammaFit(Double.NaN, Double.NaN);
 
     public static GammaFit fit(double[] values, FitMethod method) {
+        if (method == FitMethod.PROBABILITY_WEIGHTED_MOMENTS) {
+            throw new IllegalArgumentException("the gamma fit supports APPROXIMATE and MAXIMUM_LIKELIHOOD");
+        }
         double[] x = Arrays.stream(values).filter(v -> v > 0 && Double.isFinite(v)).toArray();
         if (x.length < 2) {
             return UNDEFINED;
