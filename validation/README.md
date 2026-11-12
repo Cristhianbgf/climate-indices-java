@@ -56,3 +56,21 @@ In the 3 240 monthly values of the calibration period, the SPEI from the maximum
 - from the PWM fit by up to 0.81, and by more than 0.1 in 290 values.
 
 Outside the calibration period, values that fall outside the support of the fitted distribution get ±8.21. That happens in 98 months with the maximum likelihood fit (80 dry months below the lower bound of a fit with `kappa < 0`, and 18 wet months at the upper bound of one with `kappa > 0`: 17 beyond it and one so close that the probability rounds to 1), in 80 with xclim's (all dry) and in 27 with PWM (23 dry and 4 wet). The maximum likelihood fit follows the calibration sample more closely, and its bounds sit closer to the sample; PWM places them further out and extrapolates better. That is why `Spei.compute` uses PWM unless asked otherwise.
+
+## ETCCDI precipitation indices against xclim
+
+The daily series of ERA5 (see Data above) cover 24 107 days with none missing. They are point series, not basin averages. The point in Intercuenca 1391 has at least 1 mm on 8 % of the days, the one in Quilca-Vítor-Chili on 43 % and the one in Urubamba on 86 %.
+
+`xclim_etccdi_reference.py` computes the annual indices with xclim 0.61.1 and writes `src/test/resources/xclim_etccdi.csv`:
+
+| Index | Definition | xclim function |
+|---|---|---|
+| PRCPTOT | total precipitation on wet days (at least 1 mm) | `prcptot(thresh="1 mm/d")` |
+| Rx1day | highest daily precipitation | `max_1day_precipitation_amount` |
+| Rx5day | highest precipitation over five consecutive days | `max_n_day_precipitation_amount(window=5)` |
+| SDII | mean precipitation on wet days | `daily_pr_intensity` |
+| R10mm, R20mm | days with at least 10 and 20 mm | `wetdays(thresh=...)` |
+
+All 18 series (6 indices, 3 points, 66 years) agree with xclim to within 1e-9 relative (`PrecipitationAmountsTest`).
+
+A five-day window belongs to the year of its last day, so the one ending on 1 to 4 January takes days from December, as in xclim.
