@@ -74,3 +74,27 @@ The daily series of ERA5 (see Data above) cover 24 107 days with none missing. T
 All 18 series (6 indices, 3 points, 66 years) agree with xclim to within 1e-9 relative (`PrecipitationAmountsTest`).
 
 A five-day window belongs to the year of its last day, so the one ending on 1 to 4 January takes days from December, as in xclim.
+
+## CDD and CWD
+
+`etccdi_spells_reference.py` computes the longest dry spell (CDD, days with less than 1 mm) and wet spell (CWD, days with at least 1 mm) per calendar year on the same ERA5 series, in three ways, and writes `src/test/resources/etccdi_spells.csv`:
+
+- with numpy, written from the ETCCDI definitions and independently of xclim, under each of three rules for a spell that crosses 31 December: cut at the change of year, counted whole in the year it starts, or counted whole in the year it ends;
+- with xclim 1.0.0, with its default (`resample_before_rl=True`, which cuts the spell) and with `resample_before_rl=False` (the whole spell goes to the year it starts);
+- with icclim 7.3.7 and its ECA&D defaults, which count the whole spell in the year it starts.
+
+icclim runs on xclim, so the numpy version is the independent check. All three agree wherever they follow the same rule: `Spells` matches the numpy version under all three rules, xclim under its two, and icclim, in every year at the three points (`SpellsTest`).
+
+xclim 1.0 counts a wet day for CWD at 1 mm or more, as the ETCCDI list does. xclim 0.61, used above for the amount indices, counted only more than 1 mm, which differs on days of exactly 1.00 mm.
+
+### The rule for the new year matters more than the definition
+
+| Point | Index | Years where the rules disagree | Largest difference (year of start vs year of end) |
+|---|---|---|---|
+| 1391, Pacific coast | CDD | 12 of 66 | 247 days |
+| Quilca-Vítor-Chili | CWD | 25 of 66 | 108 days |
+| Urubamba | CWD | 65 of 66 | 168 days |
+
+Where the dry or the wet season spans the new year, the rule changes the index in most years and by months. `Spells` takes the rule as an argument and cuts at the change of year unless told otherwise, as xclim does by default; the choice should be stated with any result.
+
+ERA5 gives at least 1 mm on 86 % of the days at the Urubamba point, so its wet spells reach 233 days. These series test the code, not the climate of the basin; station data would likely give shorter spells.
