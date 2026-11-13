@@ -15,6 +15,9 @@ public enum FitMethod {
      */
     MAXIMUM_LIKELIHOOD,
 
-    /** Unbiased probability weighted moments, the default of the R package SPEI. Log-logistic only. */
+    /**
+     * Unbiased probability weighted moments and L-moments (Hosking, 1990), the default of the R
+     * package SPEI for both the log-logistic and the gamma distribution.
+     */
     PROBABILITY_WEIGHTED_MOMENTS
 }

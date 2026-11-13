@@ -2,12 +2,11 @@ package io.github.cristhianbgf.climind.dist;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/** Expected values from scipy 1.18.0: {@code scipy.stats.gamma.fit(x, floc=0)} and Thom's formula. */
+/** Expected values from scipy 1.18.0 ({@code scipy.stats.gamma.fit(x, floc=0)}), Thom's formula and R's lmom. */
 class GammaFitTest {
 
     private static final double[] X = {12.5, 40.1, 3.2, 77.0, 25.4, 18.9, 55.3, 9.7, 31.0, 64.2, 14.8, 22.6};
@@ -44,9 +43,18 @@ class GammaFitTest {
         assertTrue(Double.isNaN(GammaFit.UNDEFINED.cdf(1.0)));
     }
 
+    /** Expected values from the R package lmom 3.3: {@code pelgam(samlmu(x))}. */
     @Test
-    void pwmIsNotAGammaMethod() {
-        assertThrows(IllegalArgumentException.class, () -> GammaFit.fit(X, FitMethod.PROBABILITY_WEIGHTED_MOMENTS));
+    void pwmMatchesLmom() {
+        GammaFit g = GammaFit.fit(X, FitMethod.PROBABILITY_WEIGHTED_MOMENTS);
+        assertEquals(1.463465767563809, g.shape(), 1e-14);
+        assertEquals(21.336337816756313, g.scale(), 1e-12);
+    }
+
+    @Test
+    void pwmNeedsFourPositiveValues() {
+        assertSame(GammaFit.UNDEFINED, GammaFit.fitPwm(new double[] {0, 3, 5, 9}));
+        assertTrue(GammaFit.fitPwm(new double[] {2, 3, 5, 9}).shape() > 0);
     }
 
     @Test

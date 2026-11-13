@@ -57,6 +57,69 @@ In the 3 240 monthly values of the calibration period, the SPEI from the maximum
 
 Outside the calibration period, values that fall outside the support of the fitted distribution get ±8.21. That happens in 98 months with the maximum likelihood fit (80 dry months below the lower bound of a fit with `kappa < 0`, and 18 wet months at the upper bound of one with `kappa > 0`: 17 beyond it and one so close that the probability rounds to 1), in 80 with xclim's (all dry) and in 27 with PWM (23 dry and 4 wet). The maximum likelihood fit follows the calibration sample more closely, and its bounds sit closer to the sample; PWM places them further out and extrapolates better. That is why `Spei.compute` uses PWM unless asked otherwise.
 
+## SPI by PWM against the R package SPEI
+
+`r_spi_reference.R` computes SPI-1, SPI-3 and SPI-12 with the `spi` function of the R package SPEI 1.8.1, which fits the gamma distribution to the non-zero values by unbiased probability weighted moments and Hosking's routine PELGAM (`lmom::pelgam`), with 1991-2020 as reference period. It writes `src/test/resources/r_spi.csv` and the parameters, with the share of zeros, to `r_gamma_params.csv`.
+
+- **Parameters.** All 108 fits agree with R to within 1e-12 relative (`SpiRTest`). PELGAM is a rational approximation of the L-moment estimate, not the exact solution, and it writes pi as 3.1415927; with `Math.PI` the shape differs from lmom by about 2e-8, so `GammaFit` keeps Hosking's constant.
+- **Index.** In the 101 calendar months whose reference period has no zeros, the SPI agrees with R to within 1e-8.
+- **Zeros.** In the other 7 (Intercuenca 1391: SPI-1 from June to November and SPI-3 in September), SPEI 1.8.1 computes the share of zeros but then transforms every value with the gamma CDF alone. Each month without rain gets -Inf (111 values in those 7 months), and the other values of those months come out lower, by up to 1.4 and on average by 0.06 to 0.44 depending on the month. This library adds the share of zeros, as xclim does.
+
+`fit_comparison.py` computes the whole SPI by PWM, zeros included, with numpy and scipy, and writes `src/test/resources/spi_pwm.csv`. The Java version agrees with it to within 1e-8 in every month (`SpiRTest`).
+
+## Maximum likelihood against L-moments
+
+The distribution behind SPI and SPEI can be fitted by maximum likelihood, as xclim does with `method="ML"`, or by L-moments, the default of the R package SPEI. `fit_comparison.py` compares the two fits on the same series and writes the differences per index, basin, window and calendar month to [fit_comparison.csv](fit_comparison.csv):
+
+- SPI: gamma by maximum likelihood (xclim) against gamma by PWM, both with the share of zeros added the same way;
+- SPEI: generalized logistic by maximum likelihood (the fit in the section above) against PWM (R).
+
+Inside the calibration period 1991-2020 (3 240 values per index):
+
+| | Largest difference | Values that differ by more than 0.1 | Months that change class (on the dry side) | Months that cross -1 |
+|---|---|---|---|---|
+| SPI | 0.79 | 621 | 159 (106) | 81 |
+| SPEI | 0.81 | 290 | 172 (72) | 13 |
+
+The classes have boundaries at -2, -1.5, -1, 1, 1.5 and 2; -1 is the usual start of a moderate drought.
+
+Largest difference in the calibration period, SPI, by month:
+
+| Basin | Window | Jan | Feb | Mar | Apr | May | Jun | Jul | Aug | Sep | Oct | Nov | Dec |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1391 | 1 | 0.75 | 0.50 | 0.43 | 0.39 | 0.32 | 0.01 | 0.03 | 0.13 | 0.12 | 0.02 | 0.16 | 0.61 |
+| 1391 | 3 | 0.79 | 0.59 | 0.48 | 0.44 | 0.45 | 0.37 | 0.10 | 0.22 | 0.12 | 0.07 | 0.20 | 0.24 |
+| 1391 | 12 | 0.39 | 0.28 | 0.47 | 0.49 | 0.50 | 0.49 | 0.49 | 0.49 | 0.49 | 0.48 | 0.48 | 0.47 |
+| 132 | 1 | 0.12 | 0.05 | 0.47 | 0.33 | 0.05 | 0.01 | 0.28 | 0.11 | 0.09 | 0.16 | 0.12 | 0.02 |
+| 132 | 3 | 0.20 | 0.05 | 0.13 | 0.14 | 0.49 | 0.10 | 0.11 | 0.11 | 0.11 | 0.10 | 0.02 | 0.09 |
+| 132 | 12 | 0.07 | 0.05 | 0.01 | 0.05 | 0.05 | 0.05 | 0.06 | 0.06 | 0.11 | 0.09 | 0.06 | 0.04 |
+| 4994 | 1 | 0.07 | 0.05 | 0.08 | 0.07 | 0.08 | 0.06 | 0.09 | 0.11 | 0.09 | 0.02 | 0.07 | 0.03 |
+| 4994 | 3 | 0.03 | 0.10 | 0.09 | 0.09 | 0.09 | 0.05 | 0.03 | 0.10 | 0.10 | 0.04 | 0.07 | 0.09 |
+| 4994 | 12 | 0.10 | 0.07 | 0.09 | 0.08 | 0.09 | 0.08 | 0.08 | 0.08 | 0.07 | 0.10 | 0.08 | 0.08 |
+
+The same for SPEI:
+
+| Basin | Window | Jan | Feb | Mar | Apr | May | Jun | Jul | Aug | Sep | Oct | Nov | Dec |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1391 | 1 | 0.32 | 0.36 | 0.81 | 0.17 | 0.11 | 0.23 | 0.04 | 0.15 | 0.14 | 0.07 | 0.12 | 0.28 |
+| 1391 | 3 | 0.13 | 0.79 | 0.21 | 0.29 | 0.71 | 0.53 | 0.31 | 0.10 | 0.03 | 0.08 | 0.04 | 0.07 |
+| 1391 | 12 | 0.23 | 0.39 | 0.73 | 0.55 | 0.57 | 0.32 | 0.22 | 0.34 | 0.39 | 0.55 | 0.60 | 0.48 |
+| 132 | 1 | 0.10 | 0.29 | 0.19 | 0.10 | 0.32 | 0.01 | 0.13 | 0.08 | 0.42 | 0.40 | 0.66 | 0.06 |
+| 132 | 3 | 0.06 | 0.20 | 0.20 | 0.08 | 0.20 | 0.18 | 0.03 | 0.06 | 0.09 | 0.13 | 0.03 | 0.14 |
+| 132 | 12 | 0.08 | 0.07 | 0.03 | 0.03 | 0.04 | 0.06 | 0.08 | 0.11 | 0.05 | 0.12 | 0.19 | 0.11 |
+| 4994 | 1 | 0.09 | 0.12 | 0.06 | 0.03 | 0.21 | 0.02 | 0.12 | 0.19 | 0.06 | 0.07 | 0.06 | 0.08 |
+| 4994 | 3 | 0.04 | 0.08 | 0.01 | 0.08 | 0.10 | 0.25 | 0.00 | 0.13 | 0.26 | 0.06 | 0.07 | 0.07 |
+| 4994 | 12 | 0.25 | 0.74 | 0.17 | 0.11 | 0.06 | 0.05 | 0.05 | 0.06 | 0.04 | 0.03 | 0.03 | 0.13 |
+
+What the tables show:
+
+- **The basin matters more than the window.** In the hyper-arid Intercuenca 1391 the SPI differs by more than 0.1 in 553 of its 1 080 calibration values, and SPI-12 crosses -1 under one fit and not the other in 29 months. In humid Urubamba the SPI never differs by more than 0.11 in that period.
+- **The tails move most.** Where both fits give at least 1.5 in absolute value, the mean difference is 1.7 to 4.4 times the one where both stay within ±1 for the SPI, and 1.9 to 10.2 times for the SPEI, depending on basin and window. The fit matters for the classification of droughts and wet spells, less for ordinary months.
+- **The SPEI changes more on the wet side.** It changes class in 172 months, 100 of them on the wet side, and crosses -1 in only 13. The SPI changes class in 159, 106 of them on the dry side.
+- **Outside the calibration period** the SPI differs by up to 0.93. For the SPEI the gap reaches 6.4, because the two fits put the bounds of the distribution in different places (see the section above).
+
+On these series, a study that changes the fit can change the drought months it reports in a hyper-arid basin. The fit method should be stated together with the index.
+
 ## ETCCDI precipitation indices against xclim
 
 The daily series of ERA5 (see Data above) cover 24 107 days with none missing. They are point series, not basin averages. The point in Intercuenca 1391 has at least 1 mm on 8 % of the days, the one in Quilca-Vítor-Chili on 43 % and the one in Urubamba on 86 %.
