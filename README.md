@@ -1,5 +1,7 @@
 # climind
 
+[![tests](https://github.com/Cristhianbgf/climate-indices-java/actions/workflows/tests.yml/badge.svg)](https://github.com/Cristhianbgf/climate-indices-java/actions/workflows/tests.yml)
+
 Drought and climate extreme indices in Java, checked against [xclim](https://github.com/Ouranosinc/xclim), [icclim](https://github.com/cerfacs-globc/icclim) and the R package [SPEI](https://cran.r-project.org/package=SPEI). SPI, SPEI and the ETCCDI precipitation indices of amount, spell length and very wet days are done.
 
 I could not find a maintained Java library for these indices. People who work in Java (THREDDS, ERDDAP, GeoServer or institutional systems) usually call Python or R to get them. The aim here is to compute them in Java and to document how the results compare with the reference implementations.
