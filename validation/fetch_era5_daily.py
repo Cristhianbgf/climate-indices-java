@@ -45,5 +45,5 @@ for unit, (lat, lon) in POINTS.items():
 
 df = pd.DataFrame(series)
 df.index.name = "date"
-df.round(2).to_csv(OUT, na_rep="NaN", lineterminator="\n")
+df.round(1).to_csv(OUT, na_rep="NaN", lineterminator="\n")
 print(f"{len(df)} days written to {OUT}; missing values: {int(df.isna().sum().sum())}")
