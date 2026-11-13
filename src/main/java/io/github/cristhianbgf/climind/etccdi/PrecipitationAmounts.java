@@ -120,7 +120,7 @@ public final class PrecipitationAmounts {
         });
     }
 
-    private static AnnualSeries annual(DailySeries pr, ToDoubleFunction<double[]> f) {
+    static AnnualSeries annual(DailySeries pr, ToDoubleFunction<double[]> f) {
         int first = firstFullYear(pr);
         int last = lastFullYear(pr);
         double[] out = new double[Math.max(0, last - first + 1)];

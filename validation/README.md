@@ -98,3 +98,36 @@ xclim 1.0 counts a wet day for CWD at 1 mm or more, as the ETCCDI list does. xcl
 Where the dry or the wet season spans the new year, the rule changes the index in most years and by months. `Spells` takes the rule as an argument and cuts at the change of year unless told otherwise, as xclim does by default; the choice should be stated with any result.
 
 ERA5 gives at least 1 mm on 86 % of the days at the Urubamba point, so its wet spells reach 233 days. These series test the code, not the climate of the basin; station data would likely give shorter spells.
+
+## R95pTOT and R99pTOT
+
+The threshold is the 95th or 99th percentile of the wet days (at least 1 mm) of 1961-1990, and the index adds up the precipitation of the days above it, strictly. The ETCCDI list gives the result as a total in mm; ECA&D, and so icclim, as a percentage of PRCPTOT. `VeryWetDays` gives both.
+
+`etccdi_percentiles_reference.py` computes the thresholds and the annual indices on the same ERA5 series and writes `src/test/resources/etccdi_percentile_thresholds.csv` and `etccdi_percentiles.csv`:
+
+- with numpy, written from the definitions, with the percentile by two methods: type 8 of Hyndman and Fan (median-unbiased, icclim's default) and type 7 (linear, the default of numpy and R);
+- with icclim 7.3.7: its ECA&D R95pTOT and R99pTOT for the percentage, and its generic sum with the same threshold for the total in mm;
+- with xclim 1.0.0, `fraction_over_precip_thresh`, given the type 8 threshold computed in numpy.
+
+`VeryWetDays` matches the numpy version under both methods and icclim in every year at the three points, to within 1e-9 relative, and the thresholds to within 1e-12 (`VeryWetDaysTest`). The base period holds 759 wet days at the point in Intercuenca 1391, 4 925 in Quilca-Vítor-Chili and 9 499 in Urubamba.
+
+climdex.pcic, the R implementation of the ETCCDI indices, could not be used: it was archived from CRAN in 2023, so there is no binary for R 4.6, and building it needs Rtools. icclim runs on xclim, so the numpy version is the independent check here.
+
+### Where xclim differs
+
+xclim applies one comparison to both tests: whether a day is wet and whether it is above the percentile. The ETCCDI definition needs at least 1 mm for the first and more than the percentile for the second, so neither setting reproduces it.
+
+| Point | Index | Years that differ with `">"` (largest) | Years that differ with `">="` (largest) |
+|---|---|---|---|
+| 1391 | R95pTOT | 20 (1.09 points) | 0 |
+| 1391 | R99pTOT | 5 (0.67) | 0 |
+| Quilca-Vítor-Chili | R95pTOT | 62 (0.16) | 19 (2.83) |
+| Quilca-Vítor-Chili | R99pTOT | 51 (0.08) | 5 (4.30) |
+| Urubamba | R95pTOT | 66 (0.07) | 12 (1.78) |
+| Urubamba | R99pTOT | 60 (0.03) | 0 |
+
+With `">"`, days of exactly 1.0 mm drop out of PRCPTOT; the series has 112, 204 and 274 of them. With `">="`, the days equal to the percentile count as extreme. Open-Meteo gives ERA5 in steps of 0.1 mm, so the percentile can land on a recorded value: 12.8 and 17.5 mm in Quilca-Vítor-Chili, 25.8 mm in Urubamba. Where it does not, as at 1391, `">="` gives the same result as the definition.
+
+### The percentile method
+
+Type 8 and type 7 give the same 95th percentile at Quilca-Vítor-Chili and Urubamba, and thresholds 0.12 mm apart at 1391 that change no year. The 99th percentile sits among few days and the methods part: at 1391 the threshold drops from 51.2 to 48.3 mm with type 7, which moves one year by 50.5 mm (2.7 points); at Quilca-Vítor-Chili five years move, by up to 35.0 mm (4.3 points); at Urubamba one year moves by 48.6 mm (1.5 points). `wetDayPercentile` takes the method as an argument; `r95pTot` and the other index methods use type 8.
